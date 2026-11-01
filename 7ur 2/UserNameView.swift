@@ -4,91 +4,115 @@ import SwiftUI
 struct UserNameView: View {
     @State private var userName: String = UserDefaults.standard.string(forKey: "userName") ?? ""
     @FocusState private var isFieldFocused: Bool
+    @State private var eagleIn = false
     var points: Int = 5
     var onConfirm: (String) -> Void = { _ in }
 
     var body: some View {
-        ZStack {
-            Color.appBg.ignoresSafeArea()
-            UserNameStripes().ignoresSafeArea()
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
 
-            UserNameCloud().frame(width: 150, height: 75)
-                .position(x: 80, y: 190)
-            UserNameCloud().frame(width: 170, height: 85)
-                .position(x: UIScreen.main.bounds.width - 90, y: 150)
+            ZStack {
+                Color.appBg.ignoresSafeArea()
+                UserNameStripes().ignoresSafeArea()
 
-            UserNameIsland()
-                .frame(width: 140, height: 90)
-                .position(x: 70, y: 470)
+                // سحب
+                UserNameCloud().frame(width: 130, height: 65)
+                    .position(x: 70, y: h * 0.50)
+                    .drifting(distance: 12, duration: 7)
+                UserNameCloud().frame(width: 150, height: 75)
+                    .position(x: w - 70, y: h * 0.47)
+                    .drifting(distance: 14, duration: 9)
 
-            VStack(spacing: 0) {
-                HStack {
-                    UserNamePointsPill(points: points)
-                    Spacer()
-                    Button {
-                        isFieldFocused = false
-                        onConfirm(userName)
-                    } label: {
-                        ZStack {
-                            Circle().fill(Color.appBrownEdge).offset(y: 4)
-                            Circle().fill(Color.appBrown)
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundStyle(Color.appGold)
-                        }
-                        .frame(width: 56, height: 56)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                // الجزيرة بالنص تحت مع الكنز
+                WelcomeIslandView()
+                    .frame(width: 330, height: 260)
+                    .scaleEffect(0.85)
+                    .position(x: w / 2, y: h * 0.80)
+                    .floating(amplitude: 4, duration: 2.3)
 
-                Spacer().frame(height: 120)
+                // النورس (يدخل من فوق ويقعد لين يكتب الاسم)
+                EagleView()
+                    .scaleEffect(w * 0.55 / 370)
+                    .frame(width: w * 0.55, height: w * 0.55 * 180 / 370)
+                    .position(x: w / 2, y: 135)
+                    .offset(y: eagleIn ? 0 : -h * 0.5)
+                    .allowsHitTesting(false)
 
-                Text("your name")
-                    .font(.custom("SnellRoundhand-Bold", size: 52))
-                    .foregroundStyle(Color.appGold)
-
-                Spacer().frame(height: 40)
-
-                ZStack {
-                    Capsule().fill(Color.appBrownEdge).offset(y: 5)
-                    Capsule().fill(Color.appBrown)
-
-                    TextField("", text: $userName,
-                              prompt: Text("User Name")
-                                .foregroundColor(.white.opacity(0.85)))
-                        .focused($isFieldFocused)
-                        .multilineTextAlignment(.center)
-                        .font(.system(size: 20, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-                        .submitLabel(.done)
-                        .onSubmit {
+                VStack(spacing: 0) {
+                    HStack {
+                        UserNamePointsPill(points: points)
+                        Spacer()
+                        Button {
                             isFieldFocused = false
                             onConfirm(userName)
+                        } label: {
+                            ZStack {
+                                Circle().fill(Color.appBrownEdge).offset(y: 4)
+                                Circle().fill(Color.appBrown)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundStyle(Color.appGold)
+                            }
+                            .frame(width: 56, height: 56)
                         }
-                        .padding(.horizontal, 24)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+
+                    Spacer().frame(height: 130)
+
+                    Text("your name")
+                        .font(.custom("SnellRoundhand-Bold", size: 52))
+                        .foregroundStyle(Color.appGold)
+
+                    Spacer().frame(height: 30)
+
+                    ZStack {
+                        Capsule().fill(Color.appBrownEdge).offset(y: 5)
+                        Capsule().fill(Color.appBrown)
+
+                        TextField("", text: $userName,
+                                  prompt: Text("User Name")
+                                    .foregroundColor(.white.opacity(0.85)))
+                            .focused($isFieldFocused)
+                            .multilineTextAlignment(.center)
+                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+                            .submitLabel(.done)
+                            .onSubmit {
+                                isFieldFocused = false
+                                onConfirm(userName)
+                            }
+                            .padding(.horizontal, 24)
+                    }
+                    .frame(height: 66)
+                    .padding(.horizontal, 24)
+                    .contentShape(Rectangle())
+                    .onTapGesture { isFieldFocused = true }
+
+                    Spacer().frame(height: 22)
+
+                    Text("friends will see this name on the board")
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundStyle(Color(hex: 0x6F8F8A))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Color.appCream))
+
+                    Spacer()
                 }
-                .frame(height: 66)
-                .padding(.horizontal, 24)
-                .contentShape(Rectangle())
-                .onTapGesture { isFieldFocused = true }
-
-                Spacer().frame(height: 22)
-
-                Text("friends will see this name on the board")
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundStyle(Color(hex: 0x6F8F8A))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(Color.appCream))
-
-                Spacer()
             }
+            .frame(width: w, height: h)
         }
         .ignoresSafeArea(.keyboard)
         .onTapGesture { isFieldFocused = false }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.9)) { eagleIn = true }
+        }
     }
 }
 
@@ -100,7 +124,13 @@ private struct UserNamePointsPill: View {
             Capsule().fill(Color.appBrownEdge).offset(y: 4)
             Capsule().fill(Color.appBrown)
             HStack(spacing: 12) {
-                Circle().fill(Color.appGold).frame(width: 40, height: 40)
+                ZStack {
+                    Circle().fill(Color.appGold)
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(Color(hex: 0x6B4A1A))
+                }
+                .frame(width: 40, height: 40)
                 Text("\(points) points")
                     .font(.system(size: 17, weight: .medium, design: .rounded))
                     .foregroundStyle(Color.appGold)
@@ -140,28 +170,6 @@ private struct UserNameCloud: View {
                 Capsule().fill(.white).frame(width: w, height: h * 0.45)
                     .position(x: w * 0.5, y: h * 0.78)
             }
-        }
-    }
-}
-
-private struct UserNameIsland: View {
-    var body: some View {
-        ZStack {
-            Ellipse().fill(.white.opacity(0.35))
-                .frame(width: 140, height: 40).offset(y: 22)
-            Ellipse().fill(Color(hex: 0xC9AE6A))
-                .frame(width: 110, height: 34).offset(y: 12)
-            Ellipse().fill(Color.appGold)
-                .frame(width: 24, height: 7).offset(y: 10)
-            Capsule().fill(Color.appBrown)
-                .frame(width: 5, height: 42)
-                .rotationEffect(.degrees(-6)).offset(x: -4, y: -14)
-            Capsule().fill(Color(hex: 0x3E7A52))
-                .frame(width: 34, height: 8)
-                .rotationEffect(.degrees(-20)).offset(x: -20, y: -36)
-            Capsule().fill(Color(hex: 0x3E7A52))
-                .frame(width: 34, height: 8)
-                .rotationEffect(.degrees(20)).offset(x: 10, y: -36)
         }
     }
 }
