@@ -5,13 +5,15 @@ import SwiftUI
 struct WelcomeView: View {
     var onStart: () -> Void = {}
 
+    @State private var flyAway = false
+
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
             // تصميم الأصل 390 × 844
-            func px(_ x: CGFloat) -> CGFloat { w * x / 390 }
-            func py(_ y: CGFloat) -> CGFloat { h * y / 844 }
+            let sx = w / 390
+            let sy = h / 844
 
             ZStack {
                 Color.appBg.ignoresSafeArea()
@@ -19,30 +21,48 @@ struct WelcomeView: View {
                 LightRays()
                     .ignoresSafeArea()
 
-                // Clouds
-                CloudView().frame(width: 140, height: 70).position(x: px(110), y: py(190))
-                CloudView().frame(width: 150, height: 70).position(x: px(345), y: py(260))
-                CloudView().frame(width: 120, height: 60).position(x: px(80), y: py(480))
-                CloudView().frame(width: 120, height: 60).position(x: px(330), y: py(540))
-
-                // Seagull
-                SeagullView()
-                    .frame(width: 160, height: 80)
-                    .position(x: px(195), y: py(90))
+                // Clouds (تنجرف ببطء)
+                CloudView().frame(width: 140, height: 70)
+                    .position(x: 110 * sx, y: 230 * sy)
+                    .drifting(distance: 12, duration: 7)
+                CloudView().frame(width: 150, height: 70)
+                    .position(x: 345 * sx, y: 280 * sy)
+                    .drifting(distance: 14, duration: 9)
+                CloudView().frame(width: 120, height: 60)
+                    .position(x: 70 * sx, y: 430 * sy)
+                    .drifting(distance: 10, duration: 8)
+                CloudView().frame(width: 120, height: 60)
+                    .position(x: 335 * sx, y: 440 * sy)
+                    .drifting(distance: 12, duration: 6)
 
                 // Welcome text
                 Text("welcome")
                     .font(.custom("SnellRoundhand-Bold", size: 64))
                     .foregroundColor(.appGold)
-                    .position(x: px(195), y: py(340))
+                    .position(x: 195 * sx, y: 340 * sy)
 
-                // Island
+                // Island (تطفو)
                 WelcomeIslandView()
                     .frame(width: 330, height: 260)
-                    .position(x: px(195), y: py(560))
+                    .position(x: 195 * sx, y: 560 * sy)
+                    .floating(amplitude: 5, duration: 2.4)
+
+                // Eagle (نفس نسر الهوم) - يطير لفوق لما تضغط Start
+                EagleView()
+                    .scaleEffect(w * 0.70 / 370)
+                    .frame(width: w * 0.70, height: w * 0.70 * 180 / 370)
+                    .position(x: w * 0.5, y: h * 0.185)
+                    .offset(y: flyAway ? -h * 0.5 : 0)
+                    .allowsHitTesting(false)
 
                 // Start button
-                Button(action: onStart) {
+                Button {
+                    guard !flyAway else { return }
+                    withAnimation(.easeIn(duration: 0.8)) { flyAway = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        onStart()
+                    }
+                } label: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 28)
                             .fill(Color.appBrownDeep)
@@ -56,7 +76,7 @@ struct WelcomeView: View {
                     .frame(width: 296, height: 68)
                 }
                 .buttonStyle(.plain)
-                .position(x: px(195), y: py(740))
+                .position(x: 195 * sx, y: 740 * sy)
             }
             .frame(width: w, height: h)
         }
@@ -118,82 +138,7 @@ struct CloudView: View {
     }
 }
 
-// MARK: - Seagull
-
-struct SeagullView: View {
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            ZStack {
-                // Left wing
-                Path { p in
-                    p.move(to: CGPoint(x: w * 0.44, y: h * 0.48))
-                    p.addLine(to: CGPoint(x: w * 0.18, y: h * 0.40))
-                    p.addLine(to: CGPoint(x: w * 0.00, y: h * 0.58))
-                    p.addLine(to: CGPoint(x: w * 0.46, y: h * 0.58))
-                    p.closeSubpath()
-                }
-                .fill(Color(hex: "8C8C8C"))
-
-                // Right wing
-                Path { p in
-                    p.move(to: CGPoint(x: w * 0.56, y: h * 0.48))
-                    p.addLine(to: CGPoint(x: w * 0.82, y: h * 0.40))
-                    p.addLine(to: CGPoint(x: w * 1.00, y: h * 0.58))
-                    p.addLine(to: CGPoint(x: w * 0.54, y: h * 0.58))
-                    p.closeSubpath()
-                }
-                .fill(Color(hex: "6E6E6E"))
-
-                // Wing edges (black)
-                Path { p in
-                    p.move(to: CGPoint(x: w * 0.00, y: h * 0.58))
-                    p.addLine(to: CGPoint(x: w * 0.46, y: h * 0.58))
-                    p.addLine(to: CGPoint(x: w * 0.46, y: h * 0.64))
-                    p.closeSubpath()
-                    p.move(to: CGPoint(x: w * 1.00, y: h * 0.58))
-                    p.addLine(to: CGPoint(x: w * 0.54, y: h * 0.58))
-                    p.addLine(to: CGPoint(x: w * 0.54, y: h * 0.64))
-                    p.closeSubpath()
-                }
-                .fill(Color.black)
-
-                // Body
-                Path { p in
-                    p.move(to: CGPoint(x: w * 0.50, y: h * 0.10))
-                    p.addLine(to: CGPoint(x: w * 0.57, y: h * 0.40))
-                    p.addLine(to: CGPoint(x: w * 0.56, y: h * 0.85))
-                    p.addLine(to: CGPoint(x: w * 0.44, y: h * 0.85))
-                    p.addLine(to: CGPoint(x: w * 0.43, y: h * 0.40))
-                    p.closeSubpath()
-                }
-                .fill(Color(hex: "E8E8E6"))
-
-                // Tail
-                Path { p in
-                    p.move(to: CGPoint(x: w * 0.44, y: h * 0.85))
-                    p.addLine(to: CGPoint(x: w * 0.56, y: h * 0.85))
-                    p.addLine(to: CGPoint(x: w * 0.56, y: h * 1.00))
-                    p.addLine(to: CGPoint(x: w * 0.44, y: h * 1.00))
-                    p.closeSubpath()
-                }
-                .fill(Color.black)
-
-                // Beak
-                Path { p in
-                    p.move(to: CGPoint(x: w * 0.50, y: 0))
-                    p.addLine(to: CGPoint(x: w * 0.53, y: h * 0.14))
-                    p.addLine(to: CGPoint(x: w * 0.47, y: h * 0.14))
-                    p.closeSubpath()
-                }
-                .fill(Color(hex: "F4E9B0"))
-            }
-        }
-    }
-}
-
-// MARK: - Island
+// MARK: - Island (نخلة + صندوق الهوم)
 
 struct WelcomeIslandView: View {
     var body: some View {
@@ -222,185 +167,17 @@ struct WelcomeIslandView: View {
                 .frame(width: 290, height: 108)
                 .offset(y: 34)
 
-            // Palm tree
-            WelcomePalmTree()
-                .frame(width: 150, height: 150)
-                .offset(x: -62, y: -30)
+            // النخلة الموحدة (من الهوم)
+            PalmTree()
+                .frame(width: 110, height: 95)
+                .scaleEffect(1.5)
+                .offset(x: -50, y: -45)
 
-            // Treasure chest
-            WelcomeTreasureChest()
-                .frame(width: 100, height: 90)
-                .offset(x: 62, y: 8)
-        }
-    }
-}
-
-// MARK: - Palm tree
-
-struct WelcomePalmTree: View {
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let crown = CGPoint(x: w * 0.56, y: h * 0.32)
-
-            ZStack {
-                // Back fronds (darker)
-                Frond(start: crown,
-                      bend: CGPoint(x: w * 0.46, y: h * 0.02),
-                      tip: CGPoint(x: w * 0.24, y: h * 0.20),
-                      thickness: 0.5)
-                    .fill(Color(hex: "2F6B43"))
-
-                Frond(start: crown,
-                      bend: CGPoint(x: w * 0.70, y: h * 0.00),
-                      tip: CGPoint(x: w * 0.86, y: h * 0.22),
-                      thickness: 0.5)
-                    .fill(Color(hex: "2F6B43"))
-
-                // Trunk (tapered, leaning right)
-                PalmTrunk(crown: crown, baseX: w * 0.30, baseY: h * 0.98,
-                          baseWidth: w * 0.075, topWidth: w * 0.045)
-                    .fill(Color(hex: "6F5E40"))
-
-                Circle()
-                    .fill(Color(hex: "6F5E40"))
-                    .frame(width: w * 0.075, height: w * 0.075)
-                    .position(x: w * 0.30, y: h * 0.98)
-
-                // Front fronds (lighter, big and drooping)
-                Frond(start: crown,
-                      bend: CGPoint(x: w * 0.38, y: h * 0.04),
-                      tip: CGPoint(x: w * 0.00, y: h * 0.42),
-                      thickness: 0.55)
-                    .fill(Color(hex: "3E7D4F"))
-
-                Frond(start: crown,
-                      bend: CGPoint(x: w * 0.80, y: h * 0.06),
-                      tip: CGPoint(x: w * 0.97, y: h * 0.40),
-                      thickness: 0.55)
-                    .fill(Color(hex: "3E7D4F"))
-
-                Frond(start: crown,
-                      bend: CGPoint(x: w * 0.42, y: h * 0.30),
-                      tip: CGPoint(x: w * 0.20, y: h * 0.52),
-                      thickness: 0.5)
-                    .fill(Color(hex: "4A8C5A"))
-
-                Frond(start: crown,
-                      bend: CGPoint(x: w * 0.72, y: h * 0.32),
-                      tip: CGPoint(x: w * 0.84, y: h * 0.54),
-                      thickness: 0.5)
-                    .fill(Color(hex: "4A8C5A"))
-
-                // Coconuts
-                Circle()
-                    .fill(Color(hex: "5A4A30"))
-                    .frame(width: w * 0.06, height: w * 0.06)
-                    .position(x: w * 0.52, y: h * 0.36)
-                Circle()
-                    .fill(Color(hex: "5A4A30"))
-                    .frame(width: w * 0.06, height: w * 0.06)
-                    .position(x: w * 0.60, y: h * 0.37)
-            }
-        }
-    }
-}
-
-struct PalmTrunk: Shape {
-    var crown: CGPoint
-    var baseX: CGFloat
-    var baseY: CGFloat
-    var baseWidth: CGFloat
-    var topWidth: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: baseX - baseWidth / 2, y: baseY))
-        p.addQuadCurve(to: CGPoint(x: crown.x - topWidth / 2, y: crown.y),
-                       control: CGPoint(x: baseX - baseWidth / 2, y: (baseY + crown.y) / 2))
-        p.addLine(to: CGPoint(x: crown.x + topWidth / 2, y: crown.y))
-        p.addQuadCurve(to: CGPoint(x: baseX + baseWidth / 2, y: baseY),
-                       control: CGPoint(x: baseX + baseWidth / 2, y: (baseY + crown.y) / 2))
-        p.closeSubpath()
-        return p
-    }
-}
-
-// A crescent-shaped palm frond: arches up from `start`, then droops to `tip`.
-struct Frond: Shape {
-    var start: CGPoint
-    var bend: CGPoint
-    var tip: CGPoint
-    var thickness: CGFloat = 0.5   // 0 = thin line, 1 = very fat
-
-    func path(in rect: CGRect) -> Path {
-        let mid = CGPoint(x: (start.x + tip.x) / 2, y: (start.y + tip.y) / 2)
-        let lower = CGPoint(x: bend.x + (mid.x - bend.x) * thickness,
-                            y: bend.y + (mid.y - bend.y) * thickness)
-        var p = Path()
-        p.move(to: start)
-        p.addQuadCurve(to: tip, control: bend)
-        p.addQuadCurve(to: start, control: lower)
-        p.closeSubpath()
-        return p
-    }
-}
-
-// MARK: - Treasure chest
-
-struct WelcomeTreasureChest: View {
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            ZStack {
-                // Gold coins in the chest
-                Circle().fill(Color(hex: "E6C766"))
-                    .frame(width: 14, height: 14)
-                    .position(x: w * 0.20, y: h * 0.12)
-                Circle().fill(Color(hex: "E6C766"))
-                    .frame(width: 14, height: 14)
-                    .position(x: w * 0.50, y: h * 0.04)
-                Circle().fill(Color(hex: "E6C766"))
-                    .frame(width: 14, height: 14)
-                    .position(x: w * 0.78, y: h * 0.12)
-
-                // Lid
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(hex: "A8A296"))
-                    .frame(width: w * 0.80, height: h * 0.20)
-                    .position(x: w * 0.40, y: h * 0.24)
-
-                // Body
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color(hex: "7F6420"))
-                    .frame(width: w * 0.80, height: h * 0.42)
-                    .position(x: w * 0.40, y: h * 0.52)
-
-                // Gold band
-                Rectangle()
-                    .fill(Color(hex: "C4B06A"))
-                    .frame(width: w * 0.80, height: h * 0.08)
-                    .position(x: w * 0.40, y: h * 0.40)
-
-                // Lock
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color(hex: "D9B84E"))
-                    .frame(width: w * 0.10, height: h * 0.22)
-                    .position(x: w * 0.40, y: h * 0.48)
-
-                // Coins on the ground
-                Circle().fill(Color(hex: "E3C96A"))
-                    .frame(width: 18, height: 18)
-                    .position(x: w * 0.82, y: h * 0.72)
-                Circle().fill(Color(hex: "E3C96A"))
-                    .frame(width: 18, height: 18)
-                    .position(x: w * 0.98, y: h * 0.82)
-                Circle().fill(Color(hex: "E3C96A"))
-                    .frame(width: 18, height: 18)
-                    .position(x: w * 0.65, y: h * 0.86)
-            }
+            // نفس صندوق الهوم (مكبّر)
+            TreasureChest()
+                .frame(width: 44, height: 40)
+                .scaleEffect(2.2)
+                .offset(x: 62, y: 22)
         }
     }
 }
