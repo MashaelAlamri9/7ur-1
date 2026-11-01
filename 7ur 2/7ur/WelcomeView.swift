@@ -4,22 +4,16 @@ import SwiftUI
 
 struct WelcomeView: View {
     var onStart: () -> Void = {}
-    
-    // حالة لتتبع اسم المستخدم المسجل مسبقاً لتجاوزه وعدم طلبه مجدداً
-    @AppStorage("user_display_name") private var storedName: String = ""
+
+    @State private var flyAway = false
 
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
             // تصميم الأصل 390 × 844
-            // توافق الأجهزة: نحافظ على نسبة التصميم الأصلي ونوسّطه داخل الشاشة
-            // (ايفون / ايفون قابل للطي / ايباد بكل الاتجاهات)، والخلفية تملأ الشاشة كاملة
-            let s = min(w / 390, h / 844)
-            let ox = (w - 390 * s) / 2
-            let oy = (h - 844 * s) / 2
-            let px: (CGFloat) -> CGFloat = { ox + s * $0 }
-            let py: (CGFloat) -> CGFloat = { oy + s * $0 }
+            let px: (CGFloat) -> CGFloat = { w * $0 / 390 }
+            let py: (CGFloat) -> CGFloat = { h * $0 / 844 }
 
             ZStack {
                 Color.appBg.ignoresSafeArea()
@@ -28,54 +22,58 @@ struct WelcomeView: View {
                     .ignoresSafeArea()
 
                 // Clouds (تنجرف ببطء)
-                CloudView().frame(width: 140 * s, height: 70 * s)
-                    .position(x: px(110), y: py(190))
+                CloudView().frame(width: 140, height: 70)
+                    .position(x: px(110), y: py(230))
                     .drifting(distance: 12, duration: 7)
-                CloudView().frame(width: 150 * s, height: 70 * s)
-                    .position(x: px(345), y: py(260))
+                CloudView().frame(width: 150, height: 70)
+                    .position(x: px(345), y: py(280))
                     .drifting(distance: 14, duration: 9)
-                CloudView().frame(width: 120 * s, height: 60 * s)
-                    .position(x: px(80), y: py(480))
+                CloudView().frame(width: 120, height: 60)
+                    .position(x: px(70), y: py(430))
                     .drifting(distance: 10, duration: 8)
-                CloudView().frame(width: 120 * s, height: 60 * s)
-                    .position(x: px(330), y: py(540))
+                CloudView().frame(width: 120, height: 60)
+                    .position(x: px(335), y: py(440))
                     .drifting(distance: 12, duration: 6)
-
-                // EagleView (النسر الموحد)
-                EagleView()
-                    .scaleEffect(160 * s / 370)
-                    .frame(width: 160 * s, height: 160 * s * 180 / 370)
-                    .position(x: px(195), y: py(90))
 
                 // Welcome text
                 Text("welcome")
-                    .font(.custom("SnellRoundhand-Bold", size: 64 * s))
+                    .font(.custom("SnellRoundhand-Bold", size: 64))
                     .foregroundColor(.appGold)
                     .position(x: px(195), y: py(340))
 
                 // Island (تطفو)
                 WelcomeIslandView()
                     .frame(width: 330, height: 260)
-                    .scaleEffect(s)
-                    .frame(width: 330 * s, height: 260 * s)
                     .position(x: px(195), y: py(560))
                     .floating(amplitude: 5, duration: 2.4)
 
-                // Start button (الانتقال المباشر وتجاوز إدخال الاسم لوجوده مسبقاً)
-                Button(action: {
-                    onStart()
-                }) {
+                // Eagle (نفس نسر الهوم) - يطير لفوق لما تضغط Start
+                EagleView()
+                    .scaleEffect(w * 0.70 / 370)
+                    .frame(width: w * 0.70, height: w * 0.70 * 180 / 370)
+                    .position(x: w * 0.5, y: h * 0.185)
+                    .offset(y: flyAway ? -h * 0.5 : 0)
+                    .allowsHitTesting(false)
+
+                // Start button
+                Button {
+                    guard !flyAway else { return }
+                    withAnimation(.easeIn(duration: 0.8)) { flyAway = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        onStart()
+                    }
+                } label: {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 28 * s)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(Color.appBrownDeep)
-                            .offset(y: 6 * s)
-                        RoundedRectangle(cornerRadius: 28 * s)
+                            .offset(y: 6)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(Color.appBrown)
                         Text("Start")
-                            .font(.system(size: 44 * s, weight: .regular, design: .rounded))
+                            .font(.system(size: 44, weight: .regular, design: .rounded))
                             .foregroundColor(.appGold)
                     }
-                    .frame(width: 296 * s, height: 68 * s)
+                    .frame(width: 296, height: 68)
                 }
                 .buttonStyle(.plain)
                 .position(x: px(195), y: py(740))
@@ -140,58 +138,46 @@ struct CloudView: View {
     }
 }
 
-// MARK: - Island
+// MARK: - Island (نخلة + صندوق الهوم)
 
 struct WelcomeIslandView: View {
     var body: some View {
         ZStack {
             // Water ring
             Ellipse()
-                .fill(Color(hex: 0x6F9A9C))
+                .fill(Color(hex: "6F9A9C"))
                 .frame(width: 322, height: 122)
                 .offset(y: 40)
 
             // Shallow sand halo
             Ellipse()
-                .fill(Color(hex: 0xC2BA84).opacity(0.85))
+                .fill(Color(hex: "C2BA84").opacity(0.85))
                 .frame(width: 312, height: 100)
                 .offset(y: 64)
 
             // Island side
             Ellipse()
-                .fill(Color(hex: 0xA89060))
+                .fill(Color(hex: "A89060"))
                 .frame(width: 290, height: 112)
                 .offset(y: 52)
 
             // Island top
             Ellipse()
-                .fill(Color(hex: 0xF8E08E))
+                .fill(Color(hex: "F8E08E"))
                 .frame(width: 290, height: 108)
                 .offset(y: 34)
 
-            // النخلة الموحدة
+            // النخلة الموحدة (من الهوم)
             PalmTree()
                 .frame(width: 110, height: 95)
                 .scaleEffect(1.5)
                 .offset(x: -50, y: -45)
 
-            // TreasureChest (المشترك من الهوم) مع الكوينز على الأرض
-            ZStack {
-                TreasureChest()
-                
-                // العملات المعدنية على الأرض بجانب الصندوق
-                HStack(spacing: 3) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Circle()
-                            .fill(Color(hex: 0xF5C14B))
-                            .frame(width: 8, height: 8)
-                            .overlay(Circle().stroke(Color(hex: 0xD69B2D), lineWidth: 1))
-                    }
-                }
-                .offset(x: 18, y: 18)
-            }
-            .scaleEffect(1.35)
-            .offset(x: 55, y: 10)
+            // نفس صندوق الهوم (مكبّر)
+            TreasureChest()
+                .frame(width: 44, height: 40)
+                .scaleEffect(2.2)
+                .offset(x: 62, y: 22)
         }
     }
 }
